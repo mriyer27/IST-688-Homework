@@ -1,6 +1,8 @@
 streamlit
 openai
-anthropic
-pypdf
+PyPDF2
 requests
 beautifulsoup4
+anthropic
+chromadb
+pysqlite3-binary
