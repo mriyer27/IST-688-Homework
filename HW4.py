@@ -1,5 +1,13 @@
-# --- Fix for Streamlit Community Cloud's outdated system sqlite3 (chromadb needs 3.35+) ["Claude"] ---
-# See: https://stackoverflow.com/questions/76958817
+# --- sqlite3 compatibility fix for Streamlit Community Cloud ---
+# chromadb requires sqlite3 >= 3.35, but Streamlit Cloud's default Linux
+# environment ships an older system sqlite3 that doesn't meet this
+# requirement, causing chromadb to fail on import once deployed (it can
+# still work fine locally, since local machines often have a newer sqlite3).
+# The fix swaps in the pysqlite3-binary package (a modern, bundled sqlite3
+# build) in place of the standard library's sqlite3 module before chromadb
+# is imported. This snippet, and the reasoning behind it, was worked out
+# with the help of Claude (Anthropic).
+# Reference: https://stackoverflow.com/questions/76958817
 try:
     __import__("pysqlite3")
     import sys
