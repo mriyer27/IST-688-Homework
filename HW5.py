@@ -28,7 +28,7 @@ from openai import OpenAI
 st.title("HW 5 - iSchool Org Chatbot (Tool-Based RAG)")
 st.write(
     "Ask me about iSchool student organizations. Unlike HW4, this version "
-    "doesn't always search the knowledge base on every turn — instead, the "
+    "doesn't always search the knowledge base on every turn, instead, the "
     "AI model itself decides when a lookup is actually needed and calls a "
     "search tool to fetch it, the same way Lab 5's weather bot decided when "
     "to check the weather.\n\n"
