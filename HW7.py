@@ -5,7 +5,8 @@
 # still work fine locally, since local machines often have a newer sqlite3).
 # The fix swaps in the pysqlite3-binary package (a modern, bundled sqlite3
 # build) in place of the standard library's sqlite3 module before chromadb
-# is imported.
+# is imported. This snippet, and the reasoning behind it, was worked out
+# with the help of Claude (Anthropic).
 # Reference: https://stackoverflow.com/questions/76958817
 try:
     __import__("pysqlite3")
@@ -20,9 +21,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 from openai import OpenAI
 
-# ---------------------------------------------------------------------------
-# Page setup
-# ---------------------------------------------------------------------------
+
 
 st.title("HW 7 - News Monitoring Bot")
 st.write(
@@ -38,11 +37,9 @@ COLLECTION_NAME = "NewsCollection"
 openai_api_key = st.secrets["OPENAI_API_KEY"]
 client = OpenAI(api_key=openai_api_key)
 
-# ---------------------------------------------------------------------------
+
 # Load the prebuilt vector DB (built offline by build_news_db.py).
-# This app NEVER embeds anything itself, it only reads what's already there,
-# which is why it loads instantly rather than re-processing the whole dataset.
-# ---------------------------------------------------------------------------
+
 
 
 @st.cache_resource
@@ -75,9 +72,9 @@ except Exception:
     )
     st.stop()
 
-# ---------------------------------------------------------------------------
+
 # Step 4: model picker for the low-cost vs high-cost comparison
-# ---------------------------------------------------------------------------
+
 
 st.sidebar.header("Model")
 MODEL_OPTIONS = {
@@ -87,9 +84,8 @@ MODEL_OPTIONS = {
 model_choice = st.sidebar.selectbox("Choose a model", list(MODEL_OPTIONS.keys()))
 model_name = MODEL_OPTIONS[model_choice]
 
-# ---------------------------------------------------------------------------
 # Retrieval tools
-# ---------------------------------------------------------------------------
+
 
 
 def _format_results(results) -> str:
@@ -112,10 +108,7 @@ def search_news(query: str, k: int = 5) -> str:
     return _format_results(results)
 
 
-# A fixed internal query capturing what a law firm actually cares about.
-# "Most interesting news" is answered by reusing the same vector search
-# machinery as search_news, just with this query instead of user text, so
-# there's only one retrieval mechanism to build, test, and reason about.
+
 INTERESTING_QUERY = (
     "lawsuit, legal action, regulatory investigation, government scrutiny, "
     "fine, settlement, data breach, scandal, fraud, antitrust, bankruptcy, "
@@ -182,9 +175,9 @@ AVAILABLE_FUNCTIONS = {
     "find_interesting_news": find_interesting_news,
 }
 
-# ---------------------------------------------------------------------------
+
 # System prompt — strict grounding, no fallback to outside knowledge
-# ---------------------------------------------------------------------------
+
 
 SYSTEM_PROMPT = (
     "You are a news monitoring assistant for a law firm. You only report on "
@@ -203,9 +196,9 @@ SYSTEM_PROMPT = (
     "source URL for each article so the user can read the original."
 )
 
-# ---------------------------------------------------------------------------
+
 # Chat interface
-# ---------------------------------------------------------------------------
+
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -225,9 +218,6 @@ if user_input:
     first_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
 
     # First call: let the model choose which retrieval tool fits the request.
-    # reasoning_effort="none" is required here — GPT-5.6-family models don't
-    # support function tools together with their default reasoning_effort on
-    # the /v1/chat/completions endpoint.
     first_response = client.chat.completions.create(
         model=model_name,
         messages=first_messages,
@@ -244,8 +234,7 @@ if user_input:
         func = AVAILABLE_FUNCTIONS.get(func_name)
         retrieved = func(**args) if func else "No matching tool found."
 
-        # Second call: fold retrieved articles into the system prompt. No
-        # tools this time, so the model can only use what was just retrieved.
+        # Second call: fold retrieved articles into the system prompt.
         final_system_prompt = (
             SYSTEM_PROMPT + "\n\nArticles retrieved for this request:\n\n" + retrieved
         )
